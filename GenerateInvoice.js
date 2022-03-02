@@ -1,19 +1,23 @@
 function main() {
-  replace('',                            // Invoice name
-          'dd/MM/yyyy',                  // Date
-          '',                            // Invoice number
-          /*<value>*/,                   // Exchange rate
-          /*<value>*/);                  // EUR amount
+  replace('Test invoice',         // Invoice title
+          'test@email.com',       // Sender's email
+          'Roger That',           // Sender's name
+          '01/01/1999',           // Date
+          '2-1-1',                // Invoice number
+          7.56,                   // Base to target Exchange rate
+          'Kn',                   // Target currency symbol
+          1000,                   // Base currency amount
+          '€');                   // Base currency symbol
 }
 
-function replace(name, date, invoiceNumber, eurToTargetCurrencyRate, eurPrice) {
+function replace(invoiceTitle, senderEmail, senderName, date, invoiceNumber, baseToTargetCurrencyRate, targetCurrencySymbol, baseCurrencyAmount, baseCurrencySymbol) {
 
   var files = DriveApp.getFilesByName('Invoice Template');
   while (files.hasNext()) {
     var file = files.next();
 
     // Get a copy of the template
-    var copy = file.makeCopy(name + " - " + date);
+    var copy = file.makeCopy(invoiceTitle + " - " + date);
     var copyId = copy.getId();
     var invoice = DocumentApp.openById(copyId);
     var invoiceBody = invoice.getBody();
@@ -21,9 +25,9 @@ function replace(name, date, invoiceNumber, eurToTargetCurrencyRate, eurPrice) {
     // Replace placeholders
     invoiceBody.replaceText('{date}', date);
     invoiceBody.replaceText('{id}', invoiceNumber);
-    invoiceBody.replaceText('{rate}', eurToTargetCurrencyRate);
-    invoiceBody.replaceText('{eur-price}', formatCurrency('€', eurPrice));
-    invoiceBody.replaceText('{hrk-price}', formatCurrency('<Target-currency-symbol>', eurPrice * eurToTargetCurrencyRate));
+    invoiceBody.replaceText('{rate}', baseToTargetCurrencyRate);
+    invoiceBody.replaceText('{base-price}', formatCurrency(baseCurrencySymbol, baseCurrencyAmount));
+    invoiceBody.replaceText('{target-price}', formatCurrency(targetCurrencySymbol, baseCurrencyAmount * baseToTargetCurrencyRate));
     invoice.saveAndClose();
 
     // Create PDF & delete copy
@@ -31,8 +35,8 @@ function replace(name, date, invoiceNumber, eurToTargetCurrencyRate, eurPrice) {
     copy.setTrashed(true);
 
     // Send an email with attachment
-    MailApp.sendEmail('<email-address>', (name + " " + date), 'Hi, please find attached the invoice for this month. Thanks.', {
-                      name: "<name>",
+    MailApp.sendEmail(senderEmail, (invoiceTitle + " " + date), 'Hi, please find attached the invoice for this month. Thanks.', {
+                      name: senderName,
                       attachments: [copy.getAs(MimeType.PDF)]
     });
   }
